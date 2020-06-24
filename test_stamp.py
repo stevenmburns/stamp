@@ -1,8 +1,5 @@
 import numpy as np
 
-tbl = {}
-
-
 class GMat:
     def __init__(self):
         self.tbl = {}
@@ -31,13 +28,15 @@ class GMat:
 
     def semantic( self):
         self.g = np.zeros( (self.n, self.n))
-        for (k,v) in g.tbl.items():
+        for (k,v) in self.tbl.items():
             (i,j) = k
             self.g[i,j] = v
         self.ginv = np.linalg.inv(self.g)
 
     def compute_resistance_to_ground( self, idx):
-        I = np.zeros( (g.n,))
+        # I = G V
+        # G^-1 I = V
+        I = np.zeros( (self.n,))
         I[idx] = 1
         return self.ginv.dot(I)[idx]
 
@@ -64,16 +63,16 @@ class GMat:
         inner_m = self.new_node()
         inner_r = self.new_node()
 
-        g.stamp( -1, outer_l, self.t)
-        g.stamp( -1, outer_m, self.t)
-        g.stamp( -1, outer_r, self.t)
-        g.stamp( outer_l, outer_m, 0.5*self.h)
-        g.stamp( outer_m, outer_r, 0.5*self.h)
+        self.stamp( -1, outer_l, self.t)
+        self.stamp( -1, outer_m, self.t)
+        self.stamp( -1, outer_r, self.t)
+        self.stamp( outer_l, outer_m, 0.5*self.h)
+        self.stamp( outer_m, outer_r, 0.5*self.h)
 
-        g.stamp( -1, inner_l, self.t)
-        g.stamp( -1, inner_r, self.t)
-        g.stamp( inner_l, inner_m, self.h)
-        g.stamp( inner_m, inner_r, self.h)
+        self.stamp( -1, inner_l, self.t)
+        self.stamp( -1, inner_r, self.t)
+        self.stamp( inner_l, inner_m, self.h)
+        self.stamp( inner_m, inner_r, self.h)
 
         return outer_m,inner_m
 
@@ -111,29 +110,45 @@ class GMat:
             self.stamp( -1, out, 1)
         return out
 
-if __name__ == "__main__":
+    def prnt( self, indices):
+        for idx in indices:
+            print( idx, self.compute_resistance_to_ground( idx))
+
+
+def test_divider():
     # I = G V
     # G^-1 I = V
 
+    g = GMat()
+
+    last = g.res_divider( 10)
+    g.semantic()
+    g.prnt( [last])
+
+    assert np.isclose( g.compute_resistance_to_ground( last), 10.0)
+
+def test_parallel():
+    g = GMat()
+
+    last = g.parallel( 10)
+    g.semantic()
+    g.prnt( [last])
+
+    assert np.isclose( g.compute_resistance_to_ground( last), 0.1)
+
+
+def test_cc_array():
+    # I = G V
+    # G^-1 I = V
 
     g = GMat()
 
     A0, B0 = g.cc_array()
     g.semantic()
-    for idx in [A0, B0]:
-        print( idx, g.compute_resistance_to_ground( idx))
+    g.prnt( [A0, B0])
 
     t1, t2 = g.row_conductance()
     g1, g2 = g.cc_array_conductance( t1, t2), g.cc_array_conductance( t2, t1)
 
-    print( 1/g1, 1/g2)
-
-#    last = g.res_divider( 10)
-#    g.semantic()
-#    for idx in [last]:
-#        print( idx, g.compute_resistance_to_ground( idx))
-
-#    last = g.parallel( 10)
-#    g.semantic()
-#    for idx in [last]:
-#        print( idx, g.compute_resistance_to_ground( idx))
+    assert np.isclose( g.compute_resistance_to_ground( A0), 1/g1)
+    assert np.isclose( g.compute_resistance_to_ground( B0), 1/g2)
