@@ -116,9 +116,6 @@ class GMat:
 
 
 def test_divider():
-    # I = G V
-    # G^-1 I = V
-
     g = GMat()
 
     last = g.res_divider( 10)
@@ -138,9 +135,6 @@ def test_parallel():
 
 
 def test_cc_array():
-    # I = G V
-    # G^-1 I = V
-
     g = GMat()
 
     A0, B0 = g.cc_array()
