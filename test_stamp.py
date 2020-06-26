@@ -1,4 +1,5 @@
 import numpy as np
+import scipy.linalg
 
 class GMat:
     def __init__(self):
@@ -31,14 +32,20 @@ class GMat:
         for (k,v) in self.tbl.items():
             (i,j) = k
             self.g[i,j] = v
-        self.ginv = np.linalg.inv(self.g)
+
+        self.l = np.linalg.cholesky( self.g)
+        #self.ginv = np.linalg.inv(self.g)
 
     def compute_resistance_to_ground( self, idx):
         # I = G V
-        # G^-1 I = V
+        # I = L L^T V
+        # I = L y
+        # y = L^T V
         I = np.zeros( (self.n,))
         I[idx] = 1
-        return self.ginv.dot(I)[idx]
+        y = scipy.linalg.solve_triangular( self.l, I, lower=True)
+        V = scipy.linalg.solve_triangular( self.l, y, lower=True, trans='T')
+        return V[idx]
 
     @staticmethod
     def par( x, y):
